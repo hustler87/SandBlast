@@ -1,0 +1,18 @@
+create table services(id bigint generated always as identity primary key,title text not null,description text default '',price text default '');
+create table images(id bigint generated always as identity primary key,path text not null,caption text default '',created_at timestamptz default now());
+create table inquiries(id bigint generated always as identity primary key,name text not null check(length(name)<=100),contact text not null check(length(contact)<=100),message text not null check(length(message)<=2000),created_at timestamptz default now());
+alter table services enable row level security;alter table images enable row level security;alter table inquiries enable row level security;
+create policy "public read" on services for select using(true);
+create policy "public read" on images for select using(true);
+create policy "admin all" on services for all to authenticated using(true) with check(true);
+create policy "admin all" on images for all to authenticated using(true) with check(true);
+create policy "anyone sends" on inquiries for insert to anon,authenticated with check(true);
+create policy "admin reads" on inquiries for select to authenticated using(true);
+create policy "admin deletes" on inquiries for delete to authenticated using(true);
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('gallery','gallery',true,8000000,array['image/jpeg','image/png','image/webp']);
+create policy "gallery public read" on storage.objects for select using(bucket_id='gallery');
+create policy "gallery admin write" on storage.objects for insert to authenticated with check(bucket_id='gallery');
+create policy "gallery admin delete" on storage.objects for delete to authenticated using(bucket_id='gallery');
+alter table services add column if not exists title_en text;
+alter table services add column if not exists description_en text;
+alter table images add column if not exists caption_en text;
